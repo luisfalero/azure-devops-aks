@@ -1,0 +1,64 @@
+name : Docker-CI
+trigger:
+  branches:
+    include:
+      - master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  ImageName: 'lfalero/azuredevops:1.0.1'
+  #ImageName: 'lfalero/azuredevops:1.0.$(Build.BuildId)'
+
+stages:
+  - stage: Build
+    displayName: Build image
+    jobs:
+      - job: Build
+        displayName: Build and push Docker image
+        steps:
+          - task: Docker@1
+            displayName: 'Build the Docker image'
+            inputs:
+              containerregistrytype: 'Container Registry'
+              dockerRegistryEndpoint: 'Docker Hub'
+              command: 'Build an image'
+              dockerFile: '**/Dockerfile'
+              imageName: '$(ImageName)'
+              includeLatestTag: true
+              useDefaultContext: false
+              buildContext: '.'
+
+          - task: Docker@1
+            displayName: 'Push the Docker image to Dockerhub'
+            inputs:
+              containerregistrytype: 'Container Registry'
+              dockerRegistryEndpoint: 'Docker Hub'
+              command: 'Push an image'
+              imageName: '$(ImageName)'
+            condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+
+          - task: HelmInstaller@0
+            displayName: 'Build the Helm Installer'
+            inputs:
+              helmVersion: '3.3.1'
+              checkLatestHelmVersion: false
+              installKubectl: true
+              kubectlVersion: '1.19.0'
+              checkLatestKubectl: false
+
+          - task: HelmDeploy@0
+            displayName: 'Build the Helm Deploy'
+            inputs:
+              command: 'package'
+              chartPath: './src/main/resources/static/aks'
+              chartVersion: '1.0.0'
+              destination: '$(Build.ArtifactStagingDirectory)'
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Build Artifacts'
+            inputs:
+              PathPublish: '$(Build.ArtifactStagingDirectory)'
+              ArtifactName: 'charts'
+              publishLocation: 'Container'

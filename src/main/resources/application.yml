@@ -1,0 +1,13 @@
+server:
+  port: 80
+
+azure:
+  cosmos:
+    uri: https://codbeu2luisd01.documents.azure.com:443/
+    key: Tdy8PQnuX3rxeIQBveERgRCrN5yuUoFllxlVSRIscWV1tOGrHh2WgTSDu64VczpXMPhTPMZpVdVc5eGhKMZbZA==
+    database: azure-devops
+    populateQueryMetrics: false
+
+application:
+  api:
+    path: azure-devops
